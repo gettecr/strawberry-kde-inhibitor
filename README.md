@@ -4,10 +4,6 @@ Using Manjaro + KDE Plasma the Strawberry music app does not prevent the laptop 
 
 **NOTE**: This may become obsolete if KDE detects that Strawberry is playing and does not suspend.
 
-The script dynamically sets the screen-off timer:
-- **Locked Screen:** The screen turns off after **60 seconds**.
-- **Unlocked Screen:** The screen turns off based on your current **KDE Energy Saving Settings**.
-
 ---
 
 ## Setup and Desktop Entry Configuration
