@@ -1,46 +1,177 @@
-## Strawberry-KDE-Inhibitor
+# Smart-KDE-Inhibitor
 
-Using Manjaro + KDE Plasma the Strawberry music app does not prevent the laptop from suspending. This is a simple Bash script to prevent the system from suspending while the Strawberry Music Player is active, ensuring music playback is continuous. It simultaneously allows the screen to turn off by overriding the automatic screen-on behavior that is common when media is playing.
+On Manjaro Linux with KDE Plasma, some applications (notably media players like Strawberry and DAWs like FL Studio) do **not reliably prevent system suspend** while they are active. Conversely, KDE may keep the screen awake during media playback even when the system is idle.
 
-**NOTE**: This may become obsolete if KDE detects that Strawberry is playing and does not suspend.
+This project provides a **general-purpose smart sleep inhibitor** that:
+
+* Prevents **system suspend** while an application is active
+* Still allows the **screen to turn off** when the session is idle or locked
+* Supports multiple application behaviors via simple modes:
+
+  * Media players (inhibit only while playing)
+  * DAWs / render jobs (always inhibit while running)
+
+The logic is split into:
+
+* A reusable inhibitor script
+* Thin per-application wrapper scripts
 
 ---
 
-## Setup and Desktop Entry Configuration
+## Files
 
-### 1. Save the Script
+```
+├── smart-inhibitor.sh        # Core logic (reusable)
+├── strawberry-wrapper.sh    # Media player example
+└── flstudio-wrapper.sh      # DAW example
+```
 
-1.  Place the script in a directory in your `$PATH` (e.g., `~/bin/` or `/usr/local/bin/`).
-2.  Make it executable:
-    ```bash
-    chmod +x /path/to/strawberry-smart.sh
-    ```
+---
 
-### 2. Modify the Strawberry Desktop Entry
+## Setup
 
-To launch Strawberry with the smart inhibitor script instead of launching the player directly, you need to edit its `.desktop` file.
+### 1. Install the Scripts
 
-1.  **Locate the `.desktop` file:**
-    The file is usually located in `/usr/share/applications/strawberry.desktop`. To edit it for your user only, copy it to your local applications folder:
-    ```bash
-    cp /usr/share/applications/strawberry.desktop ~/.local/share/applications/
-    ```
+1. Place the scripts somewhere stable (e.g. `~/Scripts/`).
+2. Make them executable:
 
-2.  **Edit the file:** Open the copied file (`~/.local/share/applications/strawberry.desktop`) with a text editor.
+```bash
+chmod +x ~/Scripts/smart-inhibitor.sh
+chmod +x ~/Scripts/strawberry-wrapper.sh
+chmod +x ~/Scripts/flstudio-wrapper.sh
+```
 
-3.  **Change the `Exec=` line:** Find the line starting with `Exec=` and change the command from the default:
+---
 
-    **Original:**
-    ```ini
-    Exec=strawberry %U
-    ```
+## How It Works
 
-    **Modified:**
-    (Replace `/path/to/` with the actual path where you saved the script.)
-    ```ini
-    Exec=/path/to/strawberry-smart.sh %U
-    ```
+### `smart-inhibitor.sh`
 
-4.  **Save the file.**
+This script manages power behavior using **systemd inhibitors**:
 
-Now, when you launch Strawberry from the application launcher or a panel/dock icon, it will execute your script, which in turn manages the power settings and launches the player. When you close Strawberry, the script will automatically terminate the background power-management loop.
+* Blocks **system sleep**
+* Does **not** block idle detection
+* Forces the screen off when the session is idle or locked
+
+It supports two modes:
+
+| Mode      | Behavior                                                                      |
+| --------- | ----------------------------------------------------------------------------- |
+| `playing` | Inhibits sleep only while media is actively playing (via MPRIS / `playerctl`) |
+| `always`  | Inhibits sleep for the entire lifetime of the target process                  |
+
+---
+
+## Strawberry (Media Player)
+
+### Wrapper Script
+
+`strawberry-wrapper.sh` launches Strawberry and starts the inhibitor in `playing` mode:
+
+```bash
+#!/bin/bash
+
+strawberry %U &
+APP_PID=$!
+
+~/Scripts/smart-inhibitor.sh "$APP_PID" playing strawberry &
+
+wait "$APP_PID"
+```
+
+### Desktop Entry Configuration
+
+1. Copy the system `.desktop` file:
+
+```bash
+cp /usr/share/applications/strawberry.desktop ~/.local/share/applications/
+```
+
+2. Edit it:
+
+```bash
+~/.local/share/applications/strawberry.desktop
+```
+
+3. Change the `Exec=` line:
+
+**Original**
+
+```ini
+Exec=strawberry %U
+```
+
+**Modified**
+
+```ini
+Exec=/home/YOURUSER/Scripts/strawberry-wrapper.sh %U
+```
+
+4. Refresh KDE’s application cache:
+
+```bash
+kbuildsycoca6
+```
+
+Now:
+
+* System suspend is blocked while music is playing
+* Screen still turns off when idle or locked
+* Inhibitor exits cleanly when Strawberry closes
+
+---
+
+## FL Studio (DAW / Always-On Apps)
+
+DAWs and render jobs should **always prevent sleep** while running.
+
+### Wrapper Script
+
+`flstudio-wrapper.sh`:
+
+```bash
+#!/bin/bash
+
+FL64 &
+APP_PID=$!
+
+~/Scripts/smart-inhibitor.sh "$APP_PID" always &
+
+wait "$APP_PID"
+```
+
+### Desktop Entry Example
+
+```ini
+[Desktop Entry]
+Name=FL Studio
+Comment=Digital Audio Workstation
+Exec=/home/YOURUSER/Scripts/flstudio-wrapper.sh
+Icon=flstudio
+Terminal=false
+Type=Application
+Categories=Audio;Music;AudioVideo;
+```
+
+---
+
+## Notes
+
+* Media players often **re-exec or hand off to an existing instance**, so PID monitoring alone is unreliable.
+  In `playing` mode, the inhibitor follows the **media player via MPRIS**, not the launcher PID.
+* The screen-off logic works on **KDE Plasma Wayland** using `kscreen-doctor`.
+* Output names (e.g. `output.eDP-1`) may need adjustment per system.
+* This setup intentionally avoids tying inhibitor lifetime to `.desktop` launcher processes.
+
+---
+
+## Future Extensions
+
+The same inhibitor can be extended to:
+
+* MIDI activity detection (DAWs)
+* Multiple simultaneous apps
+* PipeWire / JACK awareness
+* Event-driven DBus monitoring instead of polling
+
+This README now accurately reflects the system you’ve built — clean, general, and robust.
