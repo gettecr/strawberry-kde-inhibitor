@@ -173,5 +173,3 @@ The same inhibitor can be extended to:
 * Multiple simultaneous apps
 * PipeWire / JACK awareness
 * Event-driven DBus monitoring instead of polling
-
-This README now accurately reflects the system you’ve built — clean, general, and robust.
