@@ -69,10 +69,15 @@ is_locked() {
 
 start_inhibit() {
   if [[ -z "$INHIBIT_PID" ]] || ! kill -0 "$INHIBIT_PID" 2>/dev/null; then
+    local WHAT_TYPE="sleep"
+    if [[ "$MODE" == "always" ]]; then
+        WHAT_TYPE="idle:sleep"
+    fi
+
     systemd-inhibit \
       --who="Smart Inhibitor" \
       --why="Application activity detected" \
-      --what=sleep \
+      --what="$WHAT_TYPE" \
       sleep infinity &
     INHIBIT_PID=$!
   fi
@@ -124,7 +129,7 @@ while true; do
   if $SHOULD_INHIBIT; then
     start_inhibit
 
-    if is_idle; then
+    if [[ "$MODE" == "playing" ]] && is_idle; then
       screen_off
     fi
   else
