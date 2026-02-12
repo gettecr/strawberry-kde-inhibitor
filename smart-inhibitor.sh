@@ -124,7 +124,7 @@ while true; do
   if $SHOULD_INHIBIT; then
     start_inhibit
 
-    if is_idle || is_locked; then
+    if is_idle; then
       screen_off
     fi
   else

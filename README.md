@@ -22,8 +22,8 @@ The logic is split into:
 
 ```
 ├── smart-inhibitor.sh        # Core logic (reusable)
-├── strawberry-wrapper.sh    # Media player example
-└── flstudio-wrapper.sh      # DAW example
+├── strawberry-smart.sh    # Media player example
+└── flstudio-smart.sh      # DAW example
 ```
 
 ---
@@ -37,8 +37,8 @@ The logic is split into:
 
 ```bash
 chmod +x ~/Scripts/smart-inhibitor.sh
-chmod +x ~/Scripts/strawberry-wrapper.sh
-chmod +x ~/Scripts/flstudio-wrapper.sh
+chmod +x ~/Scripts/strawberry-smart.sh
+chmod +x ~/Scripts/flstudio-smart.sh
 ```
 
 ---
@@ -51,7 +51,7 @@ This script manages power behavior using **systemd inhibitors**:
 
 * Blocks **system sleep**
 * Does **not** block idle detection
-* Forces the screen off when the session is idle or locked
+* Forces the screen off when the session is idle
 
 It supports two modes:
 
@@ -104,7 +104,7 @@ Exec=strawberry %U
 **Modified**
 
 ```ini
-Exec=/home/YOURUSER/Scripts/strawberry-wrapper.sh %U
+Exec=/home/YOURUSER/Scripts/strawberry-smart.sh %U
 ```
 
 4. Refresh KDE’s application cache:
@@ -127,7 +127,7 @@ DAWs and render jobs should **always prevent sleep** while running.
 
 ### Wrapper Script
 
-`flstudio-wrapper.sh`:
+`flstudio-smart.sh`:
 
 ```bash
 #!/bin/bash
@@ -146,7 +146,7 @@ wait "$APP_PID"
 [Desktop Entry]
 Name=FL Studio
 Comment=Digital Audio Workstation
-Exec=/home/YOURUSER/Scripts/flstudio-wrapper.sh
+Exec=/home/YOURUSER/Scripts/flstudio-smart.sh
 Icon=flstudio
 Terminal=false
 Type=Application
