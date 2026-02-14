@@ -10,6 +10,7 @@ APP_PID=$!
 
 echo "FL Studio found at PID: $APP_PID"
 
+sleep 2
 # Launch the inhibitor
 ~/Scripts/smart-inhibitor.sh "$APP_PID" always &
 

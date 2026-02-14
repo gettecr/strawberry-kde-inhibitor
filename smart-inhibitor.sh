@@ -106,9 +106,26 @@ player_playing() {
   fi
 }
 
-# ---- MAIN LOOP ----
+# ---- WARM UP ----
 
 echo "Smart Inhibitor started | Mode=$MODE | Player=${PLAYER_NAME:-any}"
+
+if [[ "$MODE" == "playing" ]]; then
+    echo "Waiting for player '$PLAYER_NAME' to appear..."
+    count=0
+    while ! player_alive; do
+        sleep 1
+        ((count++))
+        if [[ "$count" -ge 10 ]]; then
+            echo "Player did not appear after 10 seconds. Exiting."
+            exit 1
+        fi
+    done
+    echo "Player detected."
+fi
+
+
+# --- MAIN LOOP ----
 
 while true; do
   # ---- EXIT CONDITIONS ----
@@ -138,4 +155,3 @@ while true; do
 
   sleep "$CHECK_INTERVAL"
 done
-
